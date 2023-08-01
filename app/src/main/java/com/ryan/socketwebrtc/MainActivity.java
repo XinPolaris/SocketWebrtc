@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        CorderUtils.print();
         String[] perms = {
                 Manifest.permission.CAMERA,
                 Manifest.permission.INTERNET,
@@ -45,16 +45,16 @@ public class MainActivity extends Activity {
 
 
     public void onBtnServer(View view) {
-        Intent intent = new Intent(this, CallActivity.class);
-        intent.putExtra("server", true);
-        startActivity(intent);
+//        Intent intent = new Intent(this, CallActivity.class);
+//        intent.putExtra("server", true);
+        startActivity( new Intent(this, CallServerActivity.class));
         finish();
     }
 
     public void onBtnClient(View view) {
-        Intent intent = new Intent(this, CallActivity.class);
-        intent.putExtra("server", false);
-        startActivity(intent);
+//        Intent intent = new Intent(this, CallActivity.class);
+//        intent.putExtra("server", false);
+        startActivity(new Intent(this, CallClientActivity.class));
         finish();
     }
 

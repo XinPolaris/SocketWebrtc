@@ -41,6 +41,8 @@
         <activity
             android:screenOrientation="portrait"
             android:name=".CallActivity"/>
+        <activity android:name=".CallServerActivity"/>
+        <activity android:name=".CallClientActivity"/>
     </application>
 
 </manifest>

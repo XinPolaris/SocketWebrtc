@@ -50,8 +50,10 @@ import java.util.List;
 
 public class CallActivity extends Activity {
 
-    /** ---------和信令服务相关----------- */
-    private final String address = "ws://10.88.1.1";
+    /**
+     * ---------和信令服务相关-----------
+     */
+    private final String address = "ws://172.20.10.5";
 
     private final int port = 8887;
 
@@ -60,7 +62,9 @@ public class CallActivity extends Activity {
     private SignalServer mServer;
     private SignalClient mClient;
 
-    /** ---------和webrtc相关----------- */
+    /**
+     * ---------和webrtc相关-----------
+     */
     // 视频信息
     private static final int VIDEO_RESOLUTION_WIDTH = 1280;
     private static final int VIDEO_RESOLUTION_HEIGHT = 720;
@@ -108,12 +112,12 @@ public class CallActivity extends Activity {
         mLocalSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
         mLocalSurfaceView.setMirror(true);
         mLocalSurfaceView.setEnableHardwareScaler(false /* enabled */);
+        mLocalSurfaceView.setZOrderMediaOverlay(true); // 注意这句，因为2个surfaceview是叠加的
 
         mRemoteSurfaceView.init(mRootEglBase.getEglBaseContext(), null);
         mRemoteSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
         mRemoteSurfaceView.setMirror(true);
         mRemoteSurfaceView.setEnableHardwareScaler(true /* enabled */);
-        mRemoteSurfaceView.setZOrderMediaOverlay(true); // 注意这句，因为2个surfaceview是叠加的
 
         // 创建PC factory , PC就是从factory里面获取的
         mPeerConnectionFactory = createPeerConnectionFactory(this);
@@ -143,10 +147,9 @@ public class CallActivity extends Activity {
         if (mIsServer) {
             mServer = new SignalServer(port);
             mServer.start();
-        }
-        else {
+        } else {
             try {
-                mClient = new SignalClient(new URI( address + ":" + port ));
+                mClient = new SignalClient(new URI(address + ":" + port));
                 mClient.connect();
             } catch (URISyntaxException e) {
                 e.printStackTrace();
@@ -191,7 +194,7 @@ public class CallActivity extends Activity {
     public static class SimpleSdpObserver implements SdpObserver {
         @Override
         public void onCreateSuccess(SessionDescription sessionDescription) {
-            Logger.d( "SdpObserver: onCreateSuccess !");
+            Logger.d("SdpObserver: onCreateSuccess !");
         }
 
         @Override
@@ -201,7 +204,7 @@ public class CallActivity extends Activity {
 
         @Override
         public void onCreateFailure(String msg) {
-            Logger.d( "SdpObserver onCreateFailure: " + msg);
+            Logger.d("SdpObserver onCreateFailure: " + msg);
         }
 
         @Override
@@ -265,8 +268,7 @@ public class CallActivity extends Activity {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
                 Logger.d("Create answer success !");
-                mPeerConnection.setLocalDescription(new SimpleSdpObserver(),
-                        sessionDescription);
+                mPeerConnection.setLocalDescription(new SimpleSdpObserver(), sessionDescription);
 
                 JSONObject message = new JSONObject();
                 try {
@@ -299,11 +301,7 @@ public class CallActivity extends Activity {
         LinkedList<PeerConnection.IceServer> iceServers = new LinkedList<PeerConnection.IceServer>();
 
         // 设置ICE服务器
-        PeerConnection.IceServer ice_server =
-                PeerConnection.IceServer.builder("turn:xxxx:3478")
-                        .setPassword("xxx")
-                        .setUsername("xxx")
-                        .createIceServer();
+        PeerConnection.IceServer ice_server = PeerConnection.IceServer.builder("turn:xxxx:3478").setPassword("xxx").setUsername("xxx").createIceServer();
 
         iceServers.add(ice_server);
 
@@ -322,11 +320,9 @@ public class CallActivity extends Activity {
         // Enable DTLS for normal calls and disable for loopback calls.
         rtcConfig.enableDtlsSrtp = true;
         //rtcConfig.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN;
-        PeerConnection connection =
-                mPeerConnectionFactory.createPeerConnection(rtcConfig,
-                        mPeerConnectionObserver); // PC的observer
+        PeerConnection connection = mPeerConnectionFactory.createPeerConnection(rtcConfig, mPeerConnectionObserver); // PC的observer
         if (connection == null) {
-            Logger.d( "Failed to createPeerConnection !");
+            Logger.d("Failed to createPeerConnection !");
             return null;
         }
 
@@ -341,19 +337,12 @@ public class CallActivity extends Activity {
         final VideoEncoderFactory encoderFactory;
         final VideoDecoderFactory decoderFactory;
 
-        encoderFactory = new DefaultVideoEncoderFactory(
-                mRootEglBase.getEglBaseContext(),
-                false /* enableIntelVp8Encoder */,
-                true);
+        encoderFactory = new DefaultVideoEncoderFactory(mRootEglBase.getEglBaseContext(), false /* enableIntelVp8Encoder */, true);
         decoderFactory = new DefaultVideoDecoderFactory(mRootEglBase.getEglBaseContext());
 
-        PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context)
-                .setEnableInternalTracer(true)
-                .createInitializationOptions());
+        PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).setEnableInternalTracer(true).createInitializationOptions());
 
-        PeerConnectionFactory.Builder builder = PeerConnectionFactory.builder()
-                .setVideoEncoderFactory(encoderFactory)
-                .setVideoDecoderFactory(decoderFactory);
+        PeerConnectionFactory.Builder builder = PeerConnectionFactory.builder().setVideoEncoderFactory(encoderFactory).setVideoDecoderFactory(decoderFactory);
         builder.setOptions(null);
 
         return builder.createPeerConnectionFactory();
@@ -378,7 +367,7 @@ public class CallActivity extends Activity {
         Logger.d("Looking for front facing cameras.");
         for (String deviceName : deviceNames) {
             if (enumerator.isBackFacing(deviceName)) {
-                Logger.d( "Creating front facing camera capturer.");
+                Logger.d("Creating front facing camera capturer.");
                 VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
                 if (videoCapturer != null) {
                     return videoCapturer;
@@ -400,7 +389,7 @@ public class CallActivity extends Activity {
         return null;
     }
 
-    private PeerConnection.Observer mPeerConnectionObserver = new PeerConnection.Observer() {
+    private final PeerConnection.Observer mPeerConnectionObserver = new PeerConnection.Observer() {
         @Override
         public void onSignalingChange(PeerConnection.SignalingState signalingState) {
             Logger.d("onSignalingChange: " + signalingState);
@@ -482,8 +471,7 @@ public class CallActivity extends Activity {
     private void sendMessage(JSONObject message) {
         if (mIsServer) {
             mServer.broadcast(message.toString());
-        }
-        else {
+        } else {
             mClient.send(message.toString());
         }
     }
@@ -491,15 +479,14 @@ public class CallActivity extends Activity {
     private void sendMessage(String message) {
         if (mIsServer) {
             mServer.broadcast(message);
-        }
-        else {
+        } else {
             mClient.send(message);
         }
     }
 
     class SignalServer extends WebSocketServer {
 
-        public SignalServer( int port ) {
+        public SignalServer(int port) {
             super(new InetSocketAddress(port));
         }
 
@@ -513,25 +500,25 @@ public class CallActivity extends Activity {
 
         @Override
         public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-            Logger.d("=== SignalServer onClose() reason="+reason+", remote="+remote);
-            printInfoOnScreen("onClose客户端断开...调用doLeave，reason="+reason);
+            Logger.d("=== SignalServer onClose() reason=" + reason + ", remote=" + remote);
+            printInfoOnScreen("onClose客户端断开...调用doLeave，reason=" + reason);
             doLeave();
         }
 
         @Override
         public void onMessage(WebSocket conn, String message) {
-            Logger.d("=== SignalServer onMessage() message="+message);
+            Logger.d("=== SignalServer onMessage() message=" + message);
             try {
                 JSONObject jsonMessage = new JSONObject(message);
 
                 String type = jsonMessage.getString("type");
                 if (type.equals("offer")) {
                     onRemoteOfferReceived(jsonMessage);
-                }else if(type.equals("answer")) {
+                } else if (type.equals("answer")) {
                     onRemoteAnswerReceived(jsonMessage);
-                }else if(type.equals("candidate")) {
+                } else if (type.equals("candidate")) {
                     onRemoteCandidateReceived(jsonMessage);
-                }else{
+                } else {
                     Logger.e("the type is invalid: " + type);
                 }
             } catch (JSONException e) {
@@ -542,7 +529,7 @@ public class CallActivity extends Activity {
         @Override
         public void onError(WebSocket conn, Exception ex) {
             ex.printStackTrace();
-            Logger.e("=== SignalServer onMessage() ex="+ex.getMessage());
+            Logger.e("=== SignalServer onMessage() ex=" + ex.getMessage());
         }
 
         @Override
@@ -577,18 +564,18 @@ public class CallActivity extends Activity {
 
         @Override
         public void onMessage(final String message) {
-            Logger.d("=== SignalClient onMessage(): message="+message);
+            Logger.d("=== SignalClient onMessage(): message=" + message);
             try {
                 JSONObject jsonMessage = new JSONObject(message);
 
                 String type = jsonMessage.getString("type");
                 if (type.equals("offer")) {
                     onRemoteOfferReceived(jsonMessage);
-                }else if(type.equals("answer")) {
+                } else if (type.equals("answer")) {
                     onRemoteAnswerReceived(jsonMessage);
-                }else if(type.equals("candidate")) {
+                } else if (type.equals("candidate")) {
                     onRemoteCandidateReceived(jsonMessage);
-                }else{
+                } else {
                     Logger.e("the type is invalid: " + type);
                 }
             } catch (JSONException e) {
@@ -598,7 +585,7 @@ public class CallActivity extends Activity {
 
         @Override
         public void onClose(int code, String reason, boolean remote) {
-            Logger.d("=== SignalClient onClose(): reason="+reason+", remote="+remote);
+            Logger.d("=== SignalClient onClose(): reason=" + reason + ", remote=" + remote);
             printInfoOnScreen("和服务端断开...调用doLeave");
             doLeave();
         }
@@ -606,7 +593,7 @@ public class CallActivity extends Activity {
         @Override
         public void onError(Exception ex) {
             ex.printStackTrace();
-            Logger.d("=== SignalClient onMessage() ex="+ex.getMessage());
+            Logger.d("=== SignalClient onMessage() ex=" + ex.getMessage());
         }
     }
 
@@ -620,11 +607,7 @@ public class CallActivity extends Activity {
 
         try {
             String description = message.getString("sdp");
-            mPeerConnection.setRemoteDescription(
-                    new SimpleSdpObserver(),
-                    new SessionDescription(
-                            SessionDescription.Type.OFFER,
-                            description));
+            mPeerConnection.setRemoteDescription(new SimpleSdpObserver(), new SessionDescription(SessionDescription.Type.OFFER, description));
             printInfoOnScreen("收到offer...调用doAnswerCall");
             doAnswerCall();
         } catch (JSONException e) {
@@ -637,11 +620,7 @@ public class CallActivity extends Activity {
         printInfoOnScreen("Receive Remote Answer ...");
         try {
             String description = message.getString("sdp");
-            mPeerConnection.setRemoteDescription(
-                    new SimpleSdpObserver(),
-                    new SessionDescription(
-                            SessionDescription.Type.ANSWER,
-                            description));
+            mPeerConnection.setRemoteDescription(new SimpleSdpObserver(), new SessionDescription(SessionDescription.Type.ANSWER, description));
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -657,10 +636,7 @@ public class CallActivity extends Activity {
             // sdpMid 与候选者相关的媒体流的识别标签
             // sdpMLineIndex 在SDP中m=的索引值
             // usernameFragment 包括了远端的唯一识别
-            IceCandidate remoteIceCandidate =
-                    new IceCandidate(message.getString("id"),
-                            message.getInt("label"),
-                            message.getString("candidate"));
+            IceCandidate remoteIceCandidate = new IceCandidate(message.getString("id"), message.getInt("label"), message.getString("candidate"));
 
             printInfoOnScreen("收到Candidate.....");
             mPeerConnection.addIceCandidate(remoteIceCandidate);
