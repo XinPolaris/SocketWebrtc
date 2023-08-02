@@ -48,7 +48,7 @@ class CallClientActivity : Activity() {
     /**
      * ---------和信令服务相关-----------
      */
-    private val address = "ws://192.168.31.207"//"ws://172.20.10.5"
+    private val address = "ws://10.49.49.141"//"ws://172.20.10.5"
     private val port = 8887
 
     //private boolean mIsServer = false;
