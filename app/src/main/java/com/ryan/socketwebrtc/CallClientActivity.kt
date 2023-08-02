@@ -192,8 +192,11 @@ class CallClientActivity : Activity() {
     private fun startCapture() {
         display?.getRealMetrics(screenMetrics)
         // 开始采集并本地显示
+//        mVideoCapturer?.startCapture(
+//            screenMetrics.widthPixels, screenMetrics.heightPixels, VIDEO_FPS
+//        )
         mVideoCapturer?.startCapture(
-            screenMetrics.widthPixels, screenMetrics.heightPixels, VIDEO_FPS
+            720, 1280, 24
         )
     }
 
