@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
 
-    <Button
-        android:id="@+id/btn_cast_start"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="80dp"
-        android:text="开始投屏" />
-
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <TextView
         android:id="@+id/LogcatView"
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_gravity="bottom"
+        android:layout_width="240dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right"
         android:layout_margin="10dp"
-        android:textColor="@android:color/white" />
+        android:textColor="#00FF00" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="80dp"
+        android:text="返回" />
 
 </FrameLayout>

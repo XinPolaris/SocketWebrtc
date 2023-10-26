@@ -1,17 +1,18 @@
 package com.ryan.socketwebrtc
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
+import android.view.LayoutInflater
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentTransaction
+import com.ryan.socketwebrtc.databinding.ActivityClientBinding
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import org.json.JSONException
@@ -42,13 +43,18 @@ import org.webrtc.VideoCapturer
 import org.webrtc.VideoTrack
 import java.net.URI
 import java.net.URISyntaxException
+import java.nio.ByteBuffer
 import java.util.LinkedList
+import kotlin.system.exitProcess
 
-class CallClientActivity : Activity() {
+
+class CallClientActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityClientBinding
+
     /**
      * ---------和信令服务相关-----------
      */
-    private val address = "ws://10.49.49.141"//"ws://172.20.10.5"
+    private val address = "ws://10.49.54.128"//"ws://172.20.10.5"
     private val port = 8887
 
     //private boolean mIsServer = false;
@@ -64,10 +70,10 @@ class CallClientActivity : Activity() {
     //    // 纹理渲染
     private var mSurfaceTextureHelper: SurfaceTextureHelper? = null
     private var mVideoTrack: VideoTrack? = null
-    private var mAudioTrack: AudioTrack? = null
+//    private var mAudioTrack: AudioTrack? = null
 
     // 视频采集
-    private var mVideoCapturer: VideoCapturer? = null
+    private var mVideoCapturer: V4L2Capturer? = null
 
     //用于数据传输
     private var mPeerConnection: PeerConnection? = null
@@ -77,17 +83,40 @@ class CallClientActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_client)
+        binding = ActivityClientBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
         display = wm.defaultDisplay
 
         // 用户打印信息
         mLogcatView = findViewById(R.id.LogcatView)
 
-        findViewById<Button>(R.id.btn_cast_start).setOnClickListener {
-            startProjection()
+        val usbCameraFragment = UVCCameraFragment()
+        usbCameraFragment.callBack = object : UVCCameraFragment.UVCCallback {
+            override fun onFrame(buffer: ByteBuffer?, width: Int, height: Int) {
+                if (buffer != null) {
+                    mVideoCapturer?.onReceiveFrame(buffer, width, height)
+                    if (!isStartCapture) {
+                        isStartCapture = true
+                        startCapture()
+                    }
+                }
+            }
+
+            override fun onSizeChange() {
+                finish()
+            }
         }
+        val transaction: FragmentTransaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragmentContainer, usbCameraFragment)
+        transaction.commitAllowingStateLoss()
+
+        binding.btnBack.setOnClickListener { exitProcess(0) }
+
+        initRTC()
     }
+
+    var isStartCapture = false
 
     override fun onResume() {
         super.onResume()
@@ -99,8 +128,6 @@ class CallClientActivity : Activity() {
         super.onDestroy()
         stopCapture()
         doLeave()
-        //        mLocalSurfaceView.release();
-//        mRemoteSurfaceView.release();
         mVideoCapturer!!.dispose()
         mSurfaceTextureHelper!!.dispose()
         PeerConnectionFactory.stopInternalTracingCapture()
@@ -110,42 +137,7 @@ class CallClientActivity : Activity() {
         mClient?.close()
     }
 
-    private var mediaProjectionManager: MediaProjectionManager? = null
-    private fun startProjection() {
-        mediaProjectionManager =
-            getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        val captureIntent = mediaProjectionManager!!.createScreenCaptureIntent()
-        startActivityForResult(captureIntent, 1)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode != RESULT_OK || requestCode != 1) {
-            return
-        }
-        data ?: return
-        initRTC(data)
-        startCapture()
-    }
-
-    private fun initRTC(intent: Intent) {
-        //        mRootEglBase = EglBase.create()
-
-        // 用于展示本地和远端视频
-//        mLocalSurfaceView = findViewById(R.id.LocalSurfaceView);
-//        mRemoteSurfaceView = findViewById(R.id.RemoteSurfaceView);
-//
-//        mLocalSurfaceView.init(mRootEglBase.getEglBaseContext(), null);
-//        mLocalSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-//        mLocalSurfaceView.setMirror(true);
-//        mLocalSurfaceView.setEnableHardwareScaler(false /* enabled */);
-//        mLocalSurfaceView.setZOrderMediaOverlay(true); // 注意这句，因为2个surfaceview是叠加的
-//
-//        mRemoteSurfaceView.init(mRootEglBase.getEglBaseContext(), null);
-//        mRemoteSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-//        mRemoteSurfaceView.setMirror(true);
-//        mRemoteSurfaceView.setEnableHardwareScaler(true /* enabled */);
-
+    private fun initRTC() {
         // 创建PC factory , PC就是从factory里面获取的
         mPeerConnectionFactory = createPeerConnectionFactory(this)
 
@@ -153,48 +145,32 @@ class CallClientActivity : Activity() {
         Logging.enableLogToDebugOutput(Logging.Severity.LS_VERBOSE)
 
         // 创建视频采集器
-        mVideoCapturer = createVideoCapturer(intent)
+        mVideoCapturer = V4L2Capturer()
 
-//        mSurfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", mRootEglBase.getEglBaseContext());
-//        VideoSource videoSource = mPeerConnectionFactory.createVideoSource(false);
         mSurfaceTextureHelper =
             SurfaceTextureHelper.create("CaptureThread", mRootEglBase.eglBaseContext)
-        val videoSource = mPeerConnectionFactory!!.createVideoSource(
-            mVideoCapturer!!.isScreencast
-        )
+        val videoSource = mPeerConnectionFactory!!.createVideoSource(false)
         mVideoCapturer!!.initialize(
             mSurfaceTextureHelper, applicationContext, videoSource.capturerObserver
         )
         mVideoTrack = mPeerConnectionFactory!!.createVideoTrack(VIDEO_TRACK_ID, videoSource)
-//        mVideoTrack?.setEnabled(true)
-        //        mVideoTrack.addSink(mLocalSurfaceView); // 设置渲染到本地surfaceview上
 
         //AudioSource 和 AudioTrack 与VideoSource和VideoTrack相似，只是不需要AudioCapturer 来获取麦克风，
-        val audioSource = mPeerConnectionFactory!!.createAudioSource(MediaConstraints())
-        mAudioTrack = mPeerConnectionFactory!!.createAudioTrack(AUDIO_TRACK_ID, audioSource)
+//        val audioSource = mPeerConnectionFactory!!.createAudioSource(MediaConstraints())
+//        mAudioTrack = mPeerConnectionFactory!!.createAudioTrack(AUDIO_TRACK_ID, audioSource)
 //        mAudioTrack?.setEnabled(true)
         /** ---------开始启动信令服务-----------  */
-//        mIsServer = getIntent().getBooleanExtra("server", false);
-
-//        if (mIsServer) {
-//            mServer = new SignalServer(port);
-//            mServer.start();
-//        } else {
         try {
             mClient = SignalClient(URI("$address:$port"))
             mClient!!.connect()
         } catch (e: URISyntaxException) {
             e.printStackTrace()
         }
-        //        }
     }
 
     private fun startCapture() {
         display?.getRealMetrics(screenMetrics)
         // 开始采集并本地显示
-//        mVideoCapturer?.startCapture(
-//            screenMetrics.widthPixels, screenMetrics.heightPixels, VIDEO_FPS
-//        )
         mVideoCapturer?.startCapture(
             720, 1280, 24
         )
@@ -230,53 +206,8 @@ class CallClientActivity : Activity() {
 
     private fun updateCallState(idle: Boolean) {
         Log.d(TAG, "updateCallState: $idle")
-        //        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                if (idle) {
-//                    mRemoteSurfaceView.setVisibility(View.GONE);
-//                } else {
-//                    mRemoteSurfaceView.setVisibility(View.VISIBLE);
-//                }
-//            }
-//        });
     }
 
-//    /**
-//     * 有其他用户连进来，
-//     */
-//    fun doStartCall(conn: WebSocket) {
-//        printInfoOnScreen("Start Call, Wait ...")
-//        if (mPeerConnection == null) {
-//            mPeerConnection = createPeerConnection()
-//        }
-//        val mediaConstraints = MediaConstraints()
-//        mediaConstraints.mandatory.add(
-//            MediaConstraints.KeyValuePair(
-//                "OfferToReceiveAudio", "true"
-//            )
-//        ) // 接收远端音频
-//        mediaConstraints.mandatory.add(
-//            MediaConstraints.KeyValuePair(
-//                "OfferToReceiveVideo", "true"
-//            )
-//        ) // 接收远端视频
-//        mediaConstraints.optional.add(MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"))
-//        mPeerConnection!!.createOffer(object : SimpleSdpObserver() {
-//            override fun onCreateSuccess(sessionDescription: SessionDescription) {
-//                Logger.d("Create local offer success: ${sessionDescription.description}".trimIndent())
-//                mPeerConnection!!.setLocalDescription(SimpleSdpObserver(), sessionDescription)
-//                val message = JSONObject()
-//                try {
-//                    message.put("type", "offer")
-//                    message.put("sdp", sessionDescription.description)
-//                    conn.send(message.toString())
-//                } catch (e: JSONException) {
-//                    e.printStackTrace()
-//                }
-//            }
-//        }, mediaConstraints)
-//    }
 
     fun doAnswerCall() {
         printInfoOnScreen("Answer Call, Wait ...")
@@ -348,7 +279,7 @@ class CallClientActivity : Activity() {
         }
         val mediaStreamLabels = listOf("ARDAMS")
         connection.addTrack(mVideoTrack, mediaStreamLabels)
-        connection.addTrack(mAudioTrack, mediaStreamLabels)
+//        connection.addTrack(mAudioTrack, mediaStreamLabels)
 
 //        val stream = mPeerConnectionFactory?.createLocalMediaStream("102")
 //        stream?.addTrack(mAudioTrack)
@@ -371,52 +302,6 @@ class CallClientActivity : Activity() {
             .createPeerConnectionFactory()
     }
 
-    /*
-     * Read more about Camera2 here
-     * https://developer.android.com/reference/android/hardware/camera2/package-summary.html
-     **/
-    private fun createVideoCapturer(intent: Intent): VideoCapturer {
-//        if (Camera2Enumerator.isSupported(this)) {
-//            return createCameraCapturer(new Camera2Enumerator(this));
-//        } else {
-//            return createCameraCapturer(new Camera1Enumerator(true));
-//        }
-        return ScreenCapturerAndroid(intent, object : MediaProjection.Callback() {
-            override fun onStop() {
-                super.onStop()
-                Log.e(TAG, "User has revoked media projection permissions")
-            }
-        })
-    }
-
-    //    private VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
-    //        final String[] deviceNames = enumerator.getDeviceNames();
-    //
-    //        // First, try to find front facing camera
-    //        Logger.d("Looking for front facing cameras.");
-    //        for (String deviceName : deviceNames) {
-    //            if (enumerator.isBackFacing(deviceName)) {
-    //                Logger.d("Creating front facing camera capturer.");
-    //                VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
-    //                if (videoCapturer != null) {
-    //                    return videoCapturer;
-    //                }
-    //            }
-    //        }
-    //
-    //        // Front facing camera not found, try something else
-    //        Logger.d("Looking for other cameras.");
-    //        for (String deviceName : deviceNames) {
-    //            if (!enumerator.isBackFacing(deviceName)) {
-    //                Logger.d("Creating other camera capturer.");
-    //                VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
-    //                if (videoCapturer != null) {
-    //                    return videoCapturer;
-    //                }
-    //            }
-    //        }
-    //        return null;
-    //    }
     private val mPeerConnectionObserver: PeerConnection.Observer =
         object : PeerConnection.Observer {
             override fun onSignalingChange(signalingState: SignalingState) {
@@ -476,81 +361,16 @@ class CallClientActivity : Activity() {
 
             // 收到了媒体流
             override fun onAddTrack(rtpReceiver: RtpReceiver, mediaStreams: Array<MediaStream>) {
-//            MediaStreamTrack track = rtpReceiver.track();
-//            if (track instanceof VideoTrack) {
-//                Logger.d("onAddVideoTrack");
-//                VideoTrack remoteVideoTrack = (VideoTrack) track;
-//                remoteVideoTrack.setEnabled(true);
-//                remoteVideoTrack.addSink(mRemoteSurfaceView);
-//            }
             }
         }
 
     private fun sendMessage(message: JSONObject) {
-//        if (mIsServer) {
-//            mServer.broadcast(message.toString());
-//        } else {
-        mClient!!.send(message.toString())
-        //        }
+        mClient?.send(message.toString())
     }
 
     private fun sendMessage(message: String) {
-//        if (mIsServer) {
-//            mServer.broadcast(message);
-//        } else {
         mClient!!.send(message)
-        //        }
     }
-
-//    internal inner class SignalServer(port: Int) : WebSocketServer(InetSocketAddress(port)) {
-//        override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
-//            Logger.d("=== SignalServer onOpen()")
-//            printInfoOnScreen("onOpen有客户端连接上...调用start call")
-//            //调用call， 进行媒体协商
-//            doStartCall(conn)
-//        }
-//
-//        override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
-//            Logger.d("=== SignalServer onClose() reason=$reason, remote=$remote")
-//            printInfoOnScreen("onClose客户端断开...调用doLeave，reason=$reason")
-//            doLeave()
-//        }
-//
-//        override fun onMessage(conn: WebSocket, message: String) {
-//            Logger.d("=== SignalServer onMessage() message=$message")
-//            try {
-//                val jsonMessage = JSONObject(message)
-//                val type = jsonMessage.getString("type")
-//                if (type == "offer") {
-//                    onRemoteOfferReceived(jsonMessage)
-//                } else if (type == "answer") {
-//                    onRemoteAnswerReceived(jsonMessage)
-//                } else if (type == "candidate") {
-//                    onRemoteCandidateReceived(jsonMessage)
-//                } else {
-//                    Logger.e("the type is invalid: $type")
-//                }
-//            } catch (e: JSONException) {
-//                e.printStackTrace()
-//            }
-//        }
-//
-//        override fun onError(conn: WebSocket, ex: Exception) {
-//            ex.printStackTrace()
-//            Logger.e("=== SignalServer onMessage() ex=" + ex.message)
-//        }
-//
-//        override fun onStart() {
-//            Logger.d("=== SignalServer onStart()")
-//            connectionLostTimeout = 0
-//            connectionLostTimeout = 100
-//            printInfoOnScreen("onStart服务端建立成功...创建PC")
-//            //这里应该创建PeerConnection
-//            if (mPeerConnection == null) {
-//                mPeerConnection = createPeerConnection()
-//            }
-//        }
-//    }
 
     internal inner class SignalClient(serverUri: URI?) : WebSocketClient(serverUri) {
         override fun onOpen(handshakedata: ServerHandshake) {

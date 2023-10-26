@@ -5,8 +5,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
+
+import com.ryan.socketwebrtc.databinding.ActivityMainBinding;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -18,10 +21,13 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends Activity {
 
+    private ActivityMainBinding binding;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(LayoutInflater.from(this));
+        setContentView(binding.getRoot());
         CorderUtils.print();
         String[] perms = {
                 Manifest.permission.CAMERA,
@@ -34,7 +40,14 @@ public class MainActivity extends Activity {
             EasyPermissions.requestPermissions(this, "申请权限", 0, perms);
         }
 
-        ((TextView)findViewById(R.id.ip_address)).setText(getLocalIpAddress());
+        ((TextView) findViewById(R.id.ip_address)).setText(getLocalIpAddress());
+
+        binding.btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.exit(0);
+            }
+        });
     }
 
     @Override
@@ -45,29 +58,25 @@ public class MainActivity extends Activity {
 
 
     public void onBtnServer(View view) {
-//        Intent intent = new Intent(this, CallActivity.class);
-//        intent.putExtra("server", true);
-        startActivity( new Intent(this, CallServerActivity.class));
+        startActivity(new Intent(this, CallServerActivity.class));
         finish();
     }
 
     public void onBtnClient(View view) {
-//        Intent intent = new Intent(this, CallActivity.class);
-//        intent.putExtra("server", false);
         startActivity(new Intent(this, CallClientActivity.class));
         finish();
     }
 
 
     public static String getLocalIpAddress() {
-        String strIP=null;
+        String strIP = null;
         try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
                 NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
                     InetAddress inetAddress = enumIpAddr.nextElement();
                     if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
-                        strIP= inetAddress.getHostAddress().toString();
+                        strIP = inetAddress.getHostAddress().toString();
                     }
                 }
             }

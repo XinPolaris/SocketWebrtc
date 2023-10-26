@@ -5,7 +5,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.ryan.socketwebrtc"
-        minSdkVersion 24
+        minSdkVersion 23
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -21,6 +21,9 @@ android {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
+    viewBinding{
+        enabled = true
+    }
 }
 
 dependencies {
@@ -30,4 +33,7 @@ dependencies {
     implementation 'org.webrtc:google-webrtc:1.0.+'
     implementation "org.java-websocket:Java-WebSocket:1.4.0"
     implementation 'pub.devrel:easypermissions:3.0.0'
+
+    implementation "com.fotile.fiks:v4l2-camera:1.0.0-01"
+    implementation 'com.fotile.fiks:flog:1.0.0-04'
 }

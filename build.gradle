@@ -20,7 +20,14 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        maven {
+            url "http://10.49.2.59/fiks/maven/raw/master"
+            allowInsecureProtocol = true
+        }
+        maven {
+            url "http://10.49.2.59/fiks/maven_debug/raw/master"
+            allowInsecureProtocol = true
+        }
     }
 }
 

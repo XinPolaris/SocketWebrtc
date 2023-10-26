@@ -4,25 +4,36 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CallActivity">
+    tools:context=".CallActivity"
+    android:keepScreenOn="true">
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/RemoteSurfaceView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginEnd="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="w,1920:1080"
+        app:layout_constraintDimensionRatio="1280:720"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.7" />
 
     <TextView
         android:id="@+id/LogcatView"
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_margin="10dp"
-        android:textColor="@android:color/white"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="20dp"
+        android:textColor="#00FF00"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toStartOf="@+id/RemoteSurfaceView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnBack" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="80dp"
+        android:text="返回" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

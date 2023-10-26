@@ -1,28 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:keepScreenOn="true"
+    android:padding="40dp"
     tools:context=".MainActivity">
 
     <Button
-        android:text="我是服务器"
-        android:onClick="onBtnServer"
+        android:id="@+id/btnBack"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:minWidth="80dp"
+        android:text="退出" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:onClick="onBtnServer"
+        android:text="我是服务器" />
 
 
     <Button
-        android:text="我是客户端"
-        android:onClick="onBtnClient"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:onClick="onBtnClient"
+        android:text="我是客户端" />
 
     <TextView
         android:id="@+id/ip_address"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp" />
 </LinearLayout>

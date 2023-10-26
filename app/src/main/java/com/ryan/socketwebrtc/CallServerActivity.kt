@@ -3,16 +3,15 @@ package com.ryan.socketwebrtc
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
+import com.ryan.socketwebrtc.databinding.ActivityServerBinding
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.java_websocket.server.WebSocketServer
 import org.json.JSONException
 import org.json.JSONObject
-import org.webrtc.Camera1Enumerator
-import org.webrtc.Camera2Enumerator
-import org.webrtc.CameraEnumerator
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
 import org.webrtc.DefaultVideoEncoderFactory
@@ -33,69 +32,51 @@ import org.webrtc.RtpReceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
-import org.webrtc.VideoCapturer
-import org.webrtc.VideoDecoderFactory
-import org.webrtc.VideoEncoderFactory
 import org.webrtc.VideoTrack
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.util.LinkedList
+import kotlin.system.exitProcess
 
 class CallServerActivity : Activity() {
+    private lateinit var binding: ActivityServerBinding
+
     /**
      * ---------和信令服务相关-----------
      */
-//    private val address = "ws://172.20.10.5"
     private val port = 8887
 
-    //    private boolean mIsServer = false;
     private var mServer: SignalServer? = null
-    //    private SignalClient mClient;
+
     /**
      * ---------和webrtc相关-----------
      */
-    // 视频信息
-    //    private static final int VIDEO_RESOLUTION_WIDTH = 1280;
-    //    private static final int VIDEO_RESOLUTION_HEIGHT = 720;
-    //    private static final int VIDEO_FPS = 30;
     // 打印log
     private var mLogcatView: TextView? = null
 
     // Opengl es
     private val mRootEglBase by lazy { EglBase.create() }
 
-    // 纹理渲染
-    //    private SurfaceTextureHelper mSurfaceTextureHelper;
-    //    private SurfaceViewRenderer mLocalSurfaceView;
     private lateinit var mRemoteSurfaceView: SurfaceViewRenderer
 
-    //    private VideoTrack mVideoTrack;
-    //    private AudioTrack mAudioTrack;
-    // 视频采集
-    //    private VideoCapturer mVideoCapturer;
     //用于数据传输
     private var mPeerConnection: PeerConnection? = null
     private var mPeerConnectionFactory: PeerConnectionFactory? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_server)
+        binding = ActivityServerBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
+        binding.btnBack.setOnClickListener {
+            exitProcess(0)
+        }
         // 用户打印信息
-        mLogcatView = findViewById(R.id.LogcatView)
-//        mRootEglBase = EglBase.create()
+        mLogcatView = binding.LogcatView
 
         // 用于展示本地和远端视频
-//        mLocalSurfaceView = findViewById(R.id.LocalSurfaceView);
-        mRemoteSurfaceView = findViewById(R.id.RemoteSurfaceView)
+        mRemoteSurfaceView = binding.RemoteSurfaceView
 
-//        mLocalSurfaceView.init(mRootEglBase.getEglBaseContext(), null);
-//        mLocalSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-//        mLocalSurfaceView.setMirror(true);
-//        mLocalSurfaceView.setEnableHardwareScaler(false /* enabled */);
-//        mLocalSurfaceView.setZOrderMediaOverlay(true); // 注意这句，因为2个surfaceview是叠加的
         mRemoteSurfaceView.init(mRootEglBase.eglBaseContext, null)
         mRemoteSurfaceView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_BALANCED)
-        //        mRemoteSurfaceView.setMirror(true);
-//        mRemoteSurfaceView.setEnableHardwareScaler(true /* enabled */);
 
         // 创建PC factory , PC就是从factory里面获取的
         mPeerConnectionFactory = createPeerConnectionFactory(this)
@@ -103,46 +84,17 @@ class CallServerActivity : Activity() {
         // NOTE: this _must_ happen while PeerConnectionFactory is alive!
         Logging.enableLogToDebugOutput(Logging.Severity.LS_VERBOSE)
 
-        // 创建视频采集器
-//        mVideoCapturer = createVideoCapturer();
-//
-//        mSurfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", mRootEglBase.getEglBaseContext());
-//        VideoSource videoSource = mPeerConnectionFactory.createVideoSource(false);
-//        mVideoCapturer.initialize(mSurfaceTextureHelper, getApplicationContext(), videoSource.getCapturerObserver());
-
-//        mVideoTrack = mPeerConnectionFactory.createVideoTrack(VIDEO_TRACK_ID, videoSource);
-//        mVideoTrack.setEnabled(true);
-//        mVideoTrack.addSink(mLocalSurfaceView); // 设置渲染到本地surfaceview上
-
-        //AudioSource 和 AudioTrack 与VideoSource和VideoTrack相似，只是不需要AudioCapturer 来获取麦克风，
-//        AudioSource audioSource = mPeerConnectionFactory.createAudioSource(new MediaConstraints());
-//        mAudioTrack = mPeerConnectionFactory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
-//        mAudioTrack.setEnabled(true);
         /** ---------开始启动信令服务-----------  */
-//        mIsServer = getIntent().getBooleanExtra("server", false);
-//
-//        if (mIsServer) {
         mServer = SignalServer(port)
         mServer!!.start()
-        //        } else {
-//            try {
-//                mClient = new SignalClient(new URI(address + ":" + port));
-//                mClient.connect();
-//            } catch (URISyntaxException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
     // 注意这里退出时的销毁动作
     override fun onDestroy() {
         super.onDestroy()
         doLeave()
-        //        mLocalSurfaceView.release();
         mRemoteSurfaceView.release()
 
-//        mVideoCapturer.dispose();
-//        mSurfaceTextureHelper.dispose();
         PeerConnectionFactory.stopInternalTracingCapture()
         PeerConnectionFactory.shutdownInternalTracer()
         mPeerConnectionFactory!!.dispose()
@@ -292,16 +244,13 @@ class CallServerActivity : Activity() {
             Logger.d("Failed to createPeerConnection !")
             return null
         }
-
-//        List<String> mediaStreamLabels = Collections.singletonList("ARDAMS");
-//        connection.addTrack(mVideoTrack, mediaStreamLabels);
-//        connection.addTrack(mAudioTrack, mediaStreamLabels);
         return connection
     }
 
     private fun createPeerConnectionFactory(context: Context?): PeerConnectionFactory {
         PeerConnectionFactory.initialize(
-            PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions()
+            PeerConnectionFactory.InitializationOptions.builder(context)
+                .createInitializationOptions()
         )
 
         return PeerConnectionFactory.builder().setOptions(PeerConnectionFactory.Options())
@@ -314,47 +263,6 @@ class CallServerActivity : Activity() {
             ).setVideoDecoderFactory(DefaultVideoDecoderFactory(mRootEglBase.eglBaseContext))
             .createPeerConnectionFactory()
     }
-//
-//    /*
-//     * Read more about Camera2 here
-//     * https://developer.android.com/reference/android/hardware/camera2/package-summary.html
-//     **/
-//    private fun createVideoCapturer(): VideoCapturer? {
-//        return if (Camera2Enumerator.isSupported(this)) {
-//            createCameraCapturer(Camera2Enumerator(this))
-//        } else {
-//            createCameraCapturer(Camera1Enumerator(true))
-//        }
-//    }
-//
-//    private fun createCameraCapturer(enumerator: CameraEnumerator): VideoCapturer? {
-//        val deviceNames = enumerator.deviceNames
-//
-//        // First, try to find front facing camera
-//        Logger.d("Looking for front facing cameras.")
-//        for (deviceName in deviceNames) {
-//            if (enumerator.isBackFacing(deviceName)) {
-//                Logger.d("Creating front facing camera capturer.")
-//                val videoCapturer: VideoCapturer? = enumerator.createCapturer(deviceName, null)
-//                if (videoCapturer != null) {
-//                    return videoCapturer
-//                }
-//            }
-//        }
-//
-//        // Front facing camera not found, try something else
-//        Logger.d("Looking for other cameras.")
-//        for (deviceName in deviceNames) {
-//            if (!enumerator.isBackFacing(deviceName)) {
-//                Logger.d("Creating other camera capturer.")
-//                val videoCapturer: VideoCapturer? = enumerator.createCapturer(deviceName, null)
-//                if (videoCapturer != null) {
-//                    return videoCapturer
-//                }
-//            }
-//        }
-//        return null
-//    }
 
     private val mPeerConnectionObserver: PeerConnection.Observer =
         object : PeerConnection.Observer {
@@ -426,19 +334,11 @@ class CallServerActivity : Activity() {
         }
 
     private fun sendMessage(message: JSONObject) {
-//        if (mIsServer) {
         mServer!!.broadcast(message.toString())
-        //        } else {
-//            mClient.send(message.toString());
-//        }
     }
 
     private fun sendMessage(message: String) {
-//        if (mIsServer) {
         mServer!!.broadcast(message)
-        //        } else {
-//            mClient.send(message);
-//        }
     }
 
     internal inner class SignalServer(port: Int) : WebSocketServer(InetSocketAddress(port)) {
@@ -491,56 +391,6 @@ class CallServerActivity : Activity() {
         }
     }
 
-    //    class SignalClient extends WebSocketClient {
-    //
-    //        public SignalClient(URI serverUri) {
-    //            super(serverUri);
-    //        }
-    //
-    //        @Override
-    //        public void onOpen(ServerHandshake handshakedata) {
-    //            Logger.d("=== SignalClient onOpen()");
-    //            printInfoOnScreen("连接服务端成功...创建PC");
-    //            //这里应该创建PeerConnection
-    //            if (mPeerConnection == null) {
-    //                mPeerConnection = createPeerConnection();
-    //            }
-    //        }
-    //
-    //        @Override
-    //        public void onMessage(final String message) {
-    //            Logger.d("=== SignalClient onMessage(): message=" + message);
-    //            try {
-    //                JSONObject jsonMessage = new JSONObject(message);
-    //
-    //                String type = jsonMessage.getString("type");
-    //                if (type.equals("offer")) {
-    //                    onRemoteOfferReceived(jsonMessage);
-    //                } else if (type.equals("answer")) {
-    //                    onRemoteAnswerReceived(jsonMessage);
-    //                } else if (type.equals("candidate")) {
-    //                    onRemoteCandidateReceived(jsonMessage);
-    //                } else {
-    //                    Logger.e("the type is invalid: " + type);
-    //                }
-    //            } catch (JSONException e) {
-    //                e.printStackTrace();
-    //            }
-    //        }
-    //
-    //        @Override
-    //        public void onClose(int code, String reason, boolean remote) {
-    //            Logger.d("=== SignalClient onClose(): reason=" + reason + ", remote=" + remote);
-    //            printInfoOnScreen("和服务端断开...调用doLeave");
-    //            doLeave();
-    //        }
-    //
-    //        @Override
-    //        public void onError(Exception ex) {
-    //            ex.printStackTrace();
-    //            Logger.d("=== SignalClient onMessage() ex=" + ex.getMessage());
-    //        }
-    //    }
     // 接听方，收到offer
     private fun onRemoteOfferReceived(message: JSONObject) {
         printInfoOnScreen("Receive Remote Call ...")
@@ -611,8 +461,5 @@ class CallServerActivity : Activity() {
     companion object {
         private const val ENABLE_INTEL_VP8_ENCODER = true
         private const val ENABLE_H264_HIGH_PROFILE = true
-//        // 音视频数据
-//        const val VIDEO_TRACK_ID = "1" //"ARDAMSv0";
-//        const val AUDIO_TRACK_ID = "2" //"ARDAMSa0";
     }
 }
