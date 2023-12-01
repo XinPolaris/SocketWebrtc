@@ -3,10 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:keepScreenOn="true"
-    android:padding="40dp"
+    android:orientation="vertical"
+    android:padding="20dp"
     tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/ip_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="192.168.1.1" />
 
     <Button
         android:id="@+id/btnBack"
@@ -18,10 +24,9 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="40dp"
         android:onClick="onBtnServer"
         android:text="我是服务器" />
-
 
     <Button
         android:layout_width="wrap_content"
@@ -30,9 +35,11 @@
         android:onClick="onBtnClient"
         android:text="我是客户端" />
 
-    <TextView
-        android:id="@+id/ip_address"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/editText"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="40dp"
+        android:hint="服务器IP"
+        android:text="192.168.1.1" />
 </LinearLayout>

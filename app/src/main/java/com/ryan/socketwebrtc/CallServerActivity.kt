@@ -16,6 +16,7 @@ import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
 import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
+import org.webrtc.FiksVideoEncoderFactory
 import org.webrtc.IceCandidate
 import org.webrtc.Logging
 import org.webrtc.MediaConstraints
@@ -255,7 +256,7 @@ class CallServerActivity : Activity() {
 
         return PeerConnectionFactory.builder().setOptions(PeerConnectionFactory.Options())
             .setVideoEncoderFactory(
-                DefaultVideoEncoderFactory(
+                FiksVideoEncoderFactory(
                     mRootEglBase.eglBaseContext,
                     ENABLE_INTEL_VP8_ENCODER,
                     ENABLE_H264_HIGH_PROFILE
@@ -459,7 +460,7 @@ class CallServerActivity : Activity() {
     }
 
     companion object {
-        private const val ENABLE_INTEL_VP8_ENCODER = true
+        private const val ENABLE_INTEL_VP8_ENCODER = false
         private const val ENABLE_H264_HIGH_PROFILE = true
     }
 }

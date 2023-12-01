@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CallActivity"
-    android:keepScreenOn="true">
+    android:keepScreenOn="true"
+    tools:context=".CallActivity">
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/RemoteSurfaceView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginEnd="20dp"
+        android:layout_margin="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="1280:720"
         app:layout_constraintEnd_toEndOf="parent"
@@ -33,7 +33,11 @@
         android:id="@+id/btnBack"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
         android:minWidth="80dp"
-        android:text="返回" />
+        android:text="返回"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

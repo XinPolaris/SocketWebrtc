@@ -3,7 +3,11 @@ package com.ryan.socketwebrtc;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,6 +52,24 @@ public class MainActivity extends Activity {
                 System.exit(0);
             }
         });
+        binding.editText.setText(IPUtils.INSTANCE.getServerIP(this));
+        binding.editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                String input = editable.toString();
+                IPUtils.INSTANCE.saveServerIP(MainActivity.this, input);
+            }
+        });
     }
 
     @Override
@@ -83,6 +105,6 @@ public class MainActivity extends Activity {
         } catch (SocketException ex) {
             Log.e("zhf-msg", ex.toString());
         }
-        return strIP;
+        return "本机IP：" + strIP;
     }
 }

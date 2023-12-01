@@ -12,7 +12,6 @@ package com.ryan.socketwebrtc;
 
 import android.content.Context;
 import android.os.SystemClock;
-import android.util.Log;
 
 import org.webrtc.CapturerObserver;
 import org.webrtc.JavaI420Buffer;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +40,7 @@ public class V4L2Capturer implements VideoCapturer {
     @SuppressWarnings("StringSplitter")
     private static class VideoFrameReader implements VideoReader {
 
-        private final LinkedBlockingQueue<ByteBuffer> frameQueue = new LinkedBlockingQueue<>(10);
+        private final LinkedBlockingQueue<ByteBuffer> frameQueue = new LinkedBlockingQueue<>(2);
         private int width;
         private int height;
 

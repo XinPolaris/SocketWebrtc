@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 
 import com.hsj.camera.CameraView;
 import com.hsj.camera.IFrameCallback;
+import com.hsj.camera.IImageCaptureCallback;
 import com.hsj.camera.IRender;
 import com.hsj.camera.ISurfaceCallback;
 import com.hsj.camera.UsbCameraManager;
@@ -63,12 +64,12 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
                 });
             }
         };
-        binding.itemCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showSingleChoiceDialog();
-            }
-        });
+//        binding.itemCamera.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                showSingleChoiceDialog();
+//            }
+//        });
         debugTool = new DebugTool(binding.debugInfo);
     }
     // CameraAPI
@@ -77,7 +78,6 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
     private IRender render;
     private Surface surface;
     private int[][] supportFrameSize;
-    static int curFrameSizeIndex = 6;
     static int[] curFrameSize;
 
     private void initCamera() {
@@ -113,6 +113,12 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
         destroy();
     }
 
+    public void capture(String path, IImageCaptureCallback captureCallback) {
+        if (camera != null) {
+            camera.captureImage(path, captureCallback);
+        }
+    }
+
 //==========================================Menu====================================================
 
 
@@ -131,7 +137,13 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
                 if (supportFrameSize == null || supportFrameSize.length == 0) {
                     showToast("Get support preview size failed.");
                 } else {
-                    curFrameSize = supportFrameSize[curFrameSizeIndex];
+                    for (int[] item : supportFrameSize) {
+                        if (item[0] == 1280 && item[1] == 720) {
+                            curFrameSize = item;
+                            break;
+                        }
+                    }
+//                    curFrameSize = supportFrameSize[curFrameSizeIndex];
                     final int width = curFrameSize[0];
                     final int height = curFrameSize[1];
                     Log.i(TAG, "width=" + width + ", height=" + height);
@@ -162,7 +174,6 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
 
         @Override
         public void onFrame(ByteBuffer data) {
-            Log.i(TAG, "onFrame: ");
             debugTool.onDataCallback(data, 0, curFrameSize[0], curFrameSize[1]);
             callBack.onFrame(data, curFrameSize[0], curFrameSize[1]);
         }
@@ -183,26 +194,26 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
 
 //=============================================Other================================================
 
-    private void showSingleChoiceDialog() {
-        if (supportFrameSize != null) {
-            String[] items = new String[supportFrameSize.length];
-            for (int i = 0; i < supportFrameSize.length; ++i) {
-                items[i] = "" + supportFrameSize[i][0] + " x " + supportFrameSize[i][1];
-            }
-            AlertDialog.Builder ad = new AlertDialog.Builder(getContext());
-            ad.setTitle("Select Size");
-            ad.setSingleChoiceItems(items, curFrameSizeIndex, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    curFrameSizeIndex = which;
-                }
-            });
-            ad.setPositiveButton("确定", (dialog, which) -> {
-                callBack.onSizeChange();
-            });
-            ad.show();
-        }
-    }
+//    private void showSingleChoiceDialog() {
+//        if (supportFrameSize != null) {
+//            String[] items = new String[supportFrameSize.length];
+//            for (int i = 0; i < supportFrameSize.length; ++i) {
+//                items[i] = "" + supportFrameSize[i][0] + " x " + supportFrameSize[i][1];
+//            }
+//            AlertDialog.Builder ad = new AlertDialog.Builder(getContext());
+//            ad.setTitle("Select Size");
+//            ad.setSingleChoiceItems(items, curFrameSizeIndex, new DialogInterface.OnClickListener() {
+//                @Override
+//                public void onClick(DialogInterface dialog, int which) {
+//                    curFrameSizeIndex = which;
+//                }
+//            });
+//            ad.setPositiveButton("确定", (dialog, which) -> {
+//                callBack.onSizeChange();
+//            });
+//            ad.show();
+//        }
+//    }
 
     @Override
     public void onSurface(Surface surface) {

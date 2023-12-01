@@ -1,14 +1,21 @@
 package com.ryan.socketwebrtc
 
 import android.content.Context
-import android.content.Intent
-import android.media.projection.MediaProjection
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
 import android.view.LayoutInflater
+import android.view.View
 import android.view.WindowManager
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
+import android.view.animation.AnimationSet
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.ScaleAnimation
+import android.view.animation.TranslateAnimation
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
@@ -17,11 +24,10 @@ import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import org.json.JSONException
 import org.json.JSONObject
-import org.webrtc.AudioTrack
 import org.webrtc.DataChannel
 import org.webrtc.DefaultVideoDecoderFactory
-import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
+import org.webrtc.FiksVideoEncoderFactory
 import org.webrtc.IceCandidate
 import org.webrtc.Logging
 import org.webrtc.MediaConstraints
@@ -35,12 +41,11 @@ import org.webrtc.PeerConnection.SignalingState
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.PeerConnectionFactory.InitializationOptions
 import org.webrtc.RtpReceiver
-import org.webrtc.ScreenCapturerAndroid
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceTextureHelper
-import org.webrtc.VideoCapturer
 import org.webrtc.VideoTrack
+import java.io.File
 import java.net.URI
 import java.net.URISyntaxException
 import java.nio.ByteBuffer
@@ -54,7 +59,7 @@ class CallClientActivity : AppCompatActivity() {
     /**
      * ---------和信令服务相关-----------
      */
-    private val address = "ws://10.49.54.128"//"ws://172.20.10.5"
+    private lateinit var address: String//"ws://172.20.10.5"
     private val port = 8887
 
     //private boolean mIsServer = false;
@@ -83,6 +88,8 @@ class CallClientActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val serverIP = IPUtils.getServerIP(this)
+        address = "ws://$serverIP"
         binding = ActivityClientBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -112,6 +119,11 @@ class CallClientActivity : AppCompatActivity() {
         transaction.commitAllowingStateLoss()
 
         binding.btnBack.setOnClickListener { exitProcess(0) }
+        binding.btnCapture.setOnClickListener {
+            usbCameraFragment.capture(getCaptureFilePath(this@CallClientActivity, "capture")) {path->
+                runOnUiThread { startCaptureAnimate(path) }
+            }
+        }
 
         initRTC()
     }
@@ -161,6 +173,7 @@ class CallClientActivity : AppCompatActivity() {
 //        mAudioTrack?.setEnabled(true)
         /** ---------开始启动信令服务-----------  */
         try {
+            Log.i(TAG, "initRTC: ${"$address:$port"}")
             mClient = SignalClient(URI("$address:$port"))
             mClient!!.connect()
         } catch (e: URISyntaxException) {
@@ -172,7 +185,7 @@ class CallClientActivity : AppCompatActivity() {
         display?.getRealMetrics(screenMetrics)
         // 开始采集并本地显示
         mVideoCapturer?.startCapture(
-            720, 1280, 24
+            720, 1280, 15
         )
     }
 
@@ -295,7 +308,7 @@ class CallClientActivity : AppCompatActivity() {
 
         return PeerConnectionFactory.builder().setOptions(PeerConnectionFactory.Options())
             .setVideoEncoderFactory(
-                DefaultVideoEncoderFactory(
+                FiksVideoEncoderFactory(
                     mRootEglBase.eglBaseContext, ENABLE_INTEL_VP8_ENCODER, ENABLE_H264_HIGH_PROFILE
                 )
             ).setVideoDecoderFactory(DefaultVideoDecoderFactory(mRootEglBase.eglBaseContext))
@@ -480,6 +493,73 @@ class CallClientActivity : AppCompatActivity() {
         }
     }
 
+    private fun startCaptureAnimate(filePath: String?) {
+        if (filePath.isNullOrEmpty()) return
+        Log.d(TAG, "startCaptureAnimate: ")
+        binding.ivCapturePreview.setImageURI(null)
+        binding.ivCapturePreview.setImageURI(Uri.fromFile(File(filePath)))
+
+        binding.ivCapturePreview.clearAnimation()
+
+        val animationSet = AnimationSet(false)
+
+        val alphaAnimation1 = AlphaAnimation(0f, 1f)
+        alphaAnimation1.duration = 300
+        alphaAnimation1.fillAfter = true
+        val scale = 0.2f
+        val scaleAnimation = ScaleAnimation(
+            1.0f,
+            scale,
+            1.0f,
+            scale,
+            Animation.RELATIVE_TO_SELF,
+            0.5f,
+            Animation.RELATIVE_TO_SELF,
+            0.5f
+        )
+        val translateAnimation = TranslateAnimation(
+            0f,
+            binding.btnCapture.centerX() - binding.ivCapturePreview.centerX(),
+            0f,
+            binding.btnCapture.centerY() - binding.ivCapturePreview.centerY()
+        )
+        val animationSet2 = AnimationSet(false)
+        animationSet2.interpolator = DecelerateInterpolator()
+        animationSet2.addAnimation(scaleAnimation)
+        animationSet2.addAnimation(translateAnimation)
+        animationSet2.duration = 1000
+        animationSet2.fillAfter = true
+        animationSet2.startOffset = alphaAnimation1.duration
+
+        val alphaAnimation2 = AlphaAnimation(1f, 0f)
+        alphaAnimation2.startOffset = animationSet2.duration * 2
+        alphaAnimation2.duration = 200
+        alphaAnimation2.fillAfter = true
+
+        animationSet.addAnimation(alphaAnimation1)
+        animationSet.addAnimation(animationSet2)
+        animationSet.addAnimation(alphaAnimation2)
+        binding.ivCapturePreview.startAnimation(animationSet)
+    }
+
+    private fun getCaptureFilePath(context: Context?, tag: String): String {
+        val rootDir = context?.externalCacheDir ?: Environment.getDownloadCacheDirectory()
+        val cameraDir = "${rootDir.absolutePath}/Camera"
+        val dic = File(cameraDir)
+        dic.mkdirs()
+        val path =
+//            if (BuildConfig.DEBUG) {
+            "${cameraDir}/${tag}_${System.currentTimeMillis()}.jpg"
+//        } else {
+//            "${cameraDir}/${tag}.jpg"
+//        }
+        val file = File(path)
+        if (file.exists()) {
+            file.delete()
+        }
+        return path
+    }
+
     companion object {
         private const val TAG = "CallClientActivity"
 
@@ -487,7 +567,7 @@ class CallClientActivity : AppCompatActivity() {
          * ---------和webrtc相关-----------
          */
         // 视频信息
-        private const val ENABLE_INTEL_VP8_ENCODER = true
+        private const val ENABLE_INTEL_VP8_ENCODER = false
         private const val ENABLE_H264_HIGH_PROFILE = true
         private const val VIDEO_RESOLUTION_WIDTH = 1280
         private const val VIDEO_RESOLUTION_HEIGHT = 720
@@ -499,4 +579,12 @@ class CallClientActivity : AppCompatActivity() {
         const val VIDEO_TRACK_ID = "1" //"ARDAMSv0";
         const val AUDIO_TRACK_ID = "2" //"ARDAMSa0";
     }
+}
+
+fun View.centerX(): Float {
+    return this.left + this.width / 2f
+}
+
+fun View.centerY(): Float {
+    return this.top + this.height / 2f
 }
