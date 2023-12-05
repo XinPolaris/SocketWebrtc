@@ -16,6 +16,7 @@ import android.os.SystemClock;
 import org.webrtc.CapturerObserver;
 import org.webrtc.JavaI420Buffer;
 import org.webrtc.Logging;
+import org.webrtc.NV12Buffer;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoFrame;
@@ -50,24 +51,30 @@ public class V4L2Capturer implements VideoCapturer {
         @Override
         public VideoFrame getNextFrame() {
             if (frameQueue.peek() != null) {
-                int chromaHeight = (height + 1) / 2;
-                int strideUV = (width + 1) / 2;
-                int yPos = 0;
-                int uPos = yPos + width * height;
-                int vPos = uPos + strideUV * chromaHeight;
+                VideoFrame.Buffer frameBuffer;
                 ByteBuffer buffer = frameQueue.poll();
-                buffer.position(yPos);
-                buffer.limit(uPos);
-                ByteBuffer dataY = buffer.slice();
-                buffer.position(uPos);
-                buffer.limit(vPos);
-                ByteBuffer dataU = buffer.slice();
-                buffer.position(vPos);
-                buffer.limit(vPos + strideUV * chromaHeight);
-                ByteBuffer dataV = buffer.slice();
-                JavaI420Buffer i420Buffer = JavaI420Buffer.wrap(width, height, dataY, width, dataU, strideUV, dataV, strideUV, null);
-                long timestampNS = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
-                return new VideoFrame(i420Buffer, 0, timestampNS);
+
+//                //i420
+//                int chromaHeight = (height + 1) / 2;
+//                int strideUV = (width + 1) / 2;
+//                int yPos = 0;
+//                int uPos = yPos + width * height;
+//                int vPos = uPos + strideUV * chromaHeight;
+//                buffer.position(yPos);
+//                buffer.limit(uPos);
+//                ByteBuffer dataY = buffer.slice();
+//                buffer.position(uPos);
+//                buffer.limit(vPos);
+//                ByteBuffer dataU = buffer.slice();
+//                buffer.position(vPos);
+//                buffer.limit(vPos + strideUV * chromaHeight);
+//                ByteBuffer dataV = buffer.slice();
+//                frameBuffer = JavaI420Buffer.wrap(width, height, dataY, width, dataU, strideUV, dataV, strideUV, null);
+
+                //NV12
+                frameBuffer = new NV12Buffer(width, height, width, height, buffer, null);
+
+                return new VideoFrame(frameBuffer, 0, TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime()));
             }
             return null;
         }

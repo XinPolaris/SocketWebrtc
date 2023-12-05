@@ -126,6 +126,12 @@ class CallClientActivity : AppCompatActivity() {
         }
 
         initRTC()
+
+        FpsMonitor.get().setLogEnable(true)
+        FpsMonitor.get().data.observeForever {
+            binding.fpsView.text = it.toString()
+        }
+        FpsMonitor.get().start()
     }
 
     var isStartCapture = false

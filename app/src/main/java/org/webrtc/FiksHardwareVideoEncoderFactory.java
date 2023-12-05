@@ -4,6 +4,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Build;
 import android.os.Build.VERSION;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -74,7 +75,12 @@ public class FiksHardwareVideoEncoderFactory implements VideoEncoderFactory {
                         return null;
                     }
                 }
-
+                Log.i(TAG, "createEncoder: {" +
+                        "codecName='" + codecName + '\'' +
+                        ", mime='" + mime + '\'' +
+                        ", surfaceColorFormat=" + surfaceColorFormat +
+                        ", yuvColorFormat=" + yuvColorFormat +
+                        '}');
                 return new HardwareVideoEncoder(new MediaCodecWrapperFactoryImpl(), codecName, type, surfaceColorFormat, yuvColorFormat, input.params, this.getKeyFrameIntervalSec(type), this.getForcedKeyFrameIntervalMs(type, codecName), this.createBitrateAdjuster(type, codecName), this.sharedContext);
             }
         }

@@ -134,6 +134,14 @@ public class UVCCameraFragment extends Fragment implements ISurfaceCallback {
             V4L2Camera camera = UsbCameraManager.createUsbCamera(deviceList.get(0));
             if (camera != null) {
                 supportFrameSize = camera.getSupportFrameSize();
+//                0 = {int[2]@5050} [1920, 1080]
+//                1 = {int[2]@5051} [640, 480]
+//                2 = {int[2]@5052} [160, 120]
+//                3 = {int[2]@5053} [320, 240]
+//                4 = {int[2]@5054} [800, 600]
+//                5 = {int[2]@5055} [1024, 768]
+//                6 = {int[2]@5056} [1280, 720]
+//                7 = {int[2]@5057} [1280, 1024]
                 if (supportFrameSize == null || supportFrameSize.length == 0) {
                     showToast("Get support preview size failed.");
                 } else {
