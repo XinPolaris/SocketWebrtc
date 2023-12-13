@@ -17,6 +17,7 @@ import org.webrtc.CapturerObserver;
 import org.webrtc.JavaI420Buffer;
 import org.webrtc.Logging;
 import org.webrtc.NV12Buffer;
+import org.webrtc.NV21Buffer;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoFrame;
@@ -71,8 +72,12 @@ public class V4L2Capturer implements VideoCapturer {
 //                ByteBuffer dataV = buffer.slice();
 //                frameBuffer = JavaI420Buffer.wrap(width, height, dataY, width, dataU, strideUV, dataV, strideUV, null);
 
-                //NV12
-                frameBuffer = new NV12Buffer(width, height, width, height, buffer, null);
+//                //NV12
+//                frameBuffer = new NV12Buffer(width, height, width, height, buffer, null);
+
+                byte[] arr = new byte[buffer.remaining()];
+                buffer.get(arr);
+                frameBuffer = new NV21Buffer(arr, width, height, null);
 
                 return new VideoFrame(frameBuffer, 0, TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime()));
             }
